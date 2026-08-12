@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fix Review Findings"
+  short_description: "Verify, triage, and repair review findings"
+  default_prompt: "Use $fix-review-findings to verify these review findings and apply the smallest complete fixes."

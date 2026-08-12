@@ -1,0 +1,41 @@
+{
+  "skill_name": "fix-review-findings",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Two bots and a human left nine comments on this PR. Several describe the same cross-user cache leak with different wording; two comments target code removed from the current head; one asks for a broad cache framework rewrite. Verify every comment against the current code, deduplicate by root cause, fix what is justified locally, and report what you rejected and why. Do not commit or push.",
+      "expected_output": "A pinned, root-cause-deduplicated adjudication followed by the smallest complete local code repair and focused repair review, without claiming whole-branch convergence.",
+      "expectations": [
+        "Pins the current review target and preserves all comment source identifiers.",
+        "Uses the defined verdicts and records evidence, repair cost, regression risk, benefit, and action per root cause.",
+        "Rejects stale claims and disproportionate redesign with evidence rather than reviewer-count voting.",
+        "Reviews the complete repair delta and affected callers, then reports validation and unreviewed layers.",
+        "Does not commit, push, or claim the full branch is converged."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Address the review of docs/plans/account-merge.md. One reviewer says the plan must settle lock order and identity remapping before implementation. Another says an explicitly planned unit test will catch a local parameter typo. A third requests a generic workflow engine. Decide which findings block the implementation plan, update only the plan if authorized, and explain every disposition.",
+      "expected_output": "Plan-stage triage that blocks expensive-later protocol decisions, permits naturally localized implementation feedback when all safeguards hold, and avoids speculative architecture.",
+      "expectations": [
+        "Classifies the target as an implementation plan and applies the expensive-rework stage gate.",
+        "Checks all four conditions before using implementation tests as a reason not to block.",
+        "Treats lock order and identity semantics as durable plan concerns.",
+        "Does not introduce a generic workflow engine without evidenced need.",
+        "Reports unresolved decisions instead of silently inventing them."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Fix the findings on the resource-publication spec. The review correctly identifies ambiguous ownership and failure semantics, but also insists the spec list exact TypeScript filenames, helper signatures, test commands, and fixture names. Reconcile the review and make the smallest complete document repair.",
+      "expected_output": "A spec-level repair that clarifies durable contracts while keeping implementation mechanics out of the specification.",
+      "expectations": [
+        "Classifies the target as a specification.",
+        "Adopts ownership and failure-semantic findings when verified.",
+        "Rejects or defers file, helper, command, and fixture mechanics to an implementation plan.",
+        "Produces a complete source-to-root-cause decision table.",
+        "States the bounded known-findings completion claim only if all findings are resolved."
+      ]
+    }
+  ]
+}
