@@ -19,7 +19,7 @@ Return:
 
 - a root-cause-deduplicated decision table;
 - the smallest complete repair for adopted findings, when writes are authorized;
-- focused repair-review and validation evidence;
+- an auditable repair ledger with focused review and validation evidence;
 - explicit unreviewed layers and unresolved decisions.
 
 Do not claim that this skill has converged the whole branch. Its success boundary is the supplied finding set plus the directly affected repair surface.
@@ -32,8 +32,9 @@ Do not claim that this skill has converged the whole branch. Its success boundar
    - for a document, record its path or source and a content hash or immutable revision;
    - for remote review, record the reviewed head or revision when available.
 3. State the authorized write scope: `read-only`, `local edits`, `commit`, `push`, or `remote update`. Never infer permission for the later scopes from permission for an earlier one.
-4. Capture a repair-start snapshot that includes tracked, staged, unstaged, and relevant untracked files. Later repair review must compare against this snapshot.
-5. If a finding is unclear, conflicts with an authoritative decision, or requires a new product or architecture choice, stop dependent work and ask the user. Continue only with findings proven independent.
+4. Resolve an `evidenceRoot` outside the target repository. Prefer a user-supplied task-output directory; otherwise use a writable temporary directory and report that it may expire. Never add repair evidence to the target diff.
+5. Capture `evidenceRoot/repair-start.json` with target identity, tracked/staged/unstaged/relevant-untracked state, authority paths and hashes, supplied source identifiers, exclusions, and authorized actions. Later review must compare against this snapshot.
+6. If a finding is unclear, conflicts with an authoritative decision, or requires a new product or architecture choice, stop dependent work and ask the user. Continue only with findings proven independent.
 
 ## 2. Apply rigorous review reception
 
@@ -58,14 +59,18 @@ Read [adjudication-and-coverage.md](references/adjudication-and-coverage.md) bef
    - `unverified`
 5. Record evidence, stage-blocker status, repair cost, regression risk, expected benefit, and proposed action for every group.
 
+Write the atomic source map and decision table to `evidenceRoot/adjudication.json`. Do not drop a supplied source because it was duplicate or incorrect.
+
 `accepted-risk` requires an explicit user decision. `needs-user-decision` and `unverified` remain unresolved and cannot count toward a zero-blocker result. Do not decide by reviewer count or severity label alone.
+
+**🔴 CHECKPOINT · TRIAGE:** Before editing, verify that every supplied source maps to exactly one or more atomic claims, every root-cause group has one verdict and cost-benefit record, all adopted repairs fit the authorized scope, and no dependent user decision is unresolved. If any check fails, do not edit the dependent surface.
 
 ## 4. Respect the target's abstraction level
 
 Apply the target-specific gates in the reference:
 
 - Keep a spec at the contract and architecture level. Do not insert implementation-plan details merely because a reviewer requested them.
-- Block an implementation plan on an issue tests will naturally expose only when fixing it after implementation would be materially expensive or would change a durable contract.
+- For an implementation plan, first verify that the alleged defect exists. If absent, classify it `stale-or-factually-wrong`. Only when a confirmed defect is deferred because tests will catch it may the four natural-test conditions justify a non-blocking disposition; record each condition separately.
 - Judge code findings against actual correctness, security, data, concurrency, compatibility, and stated requirements.
 
 ## 5. Design the smallest complete repair
@@ -86,11 +91,27 @@ Keep one writer: the root agent owns edits. Any subagent used by this workflow m
 1. Implement one root-cause repair at a time.
 2. Run its narrowest meaningful validation, then inspect affected callers and isolation cases.
 3. Review the complete repair delta from the repair-start snapshot, including new files, rather than only the latest patch.
-4. When subagents are available, start at least one fresh read-only reviewer each round. Give it the known finding, intended invariant, repair-start snapshot, current repair delta, and relevant callers. It may see the repair goal because this loop verifies a known fix; do not ask it to certify the whole branch.
-5. Independently verify each new review claim, update the decision table, and apply only justified minimal fixes.
-6. Repeat with a fresh repair snapshot review after every material change until there are zero adopted blockers within the declared repair coverage, or stop under the blocked conditions below.
+4. Freeze `evidenceRoot/round-N/repair.diff` and `snapshot.json`, including the current target identity and deterministic repair-diff hash.
+5. Before spawning, save the exact prompt as `reviewer.prompt.md`. Start a fresh read-only reviewer unused in earlier rounds, with no inherited conversation context. Give it the known finding, intended invariant, repair-start snapshot, frozen repair delta, and relevant callers. It may see the repair goal because this loop verifies a known fix; do not ask it to certify the whole branch.
+6. Save runtime-reported identity, parent, launch time, isolation setting, prompt hash, and snapshot tuple in `reviewer.meta.json`; never invent missing fields. Save the raw response unchanged as `reviewer.output.md` and add its hash and completion state to metadata.
+7. Recompute the target identity and complete repair-diff hash after review. If either changed, mark the round invalid and start a new round; do not use stale output to claim repair closure.
+8. Independently verify each new review claim, update `adjudication.json`, and apply only justified minimal fixes.
+9. Repeat with a new snapshot and fresh reviewer after every material change until there are zero adopted blockers within the declared repair coverage, or stop under the blocked conditions below.
+
+**🔴 CHECKPOINT · REPAIR EVIDENCE:** A focused round counts only when its exact prompt, fresh identity, isolation setting, raw output, matching snapshot, and post-review hash are preserved. If any element is missing, record the layer as `unverified`; do not claim focused-review convergence.
 
 Stop and ask the user when the loop exposes a new architecture or product decision, required evidence is unavailable, or the same confirmed root cause survives two repair attempts. Do not hide a stall by broadening the patch.
+
+## Failure handling
+
+| Trigger | Immediate action | If still unresolved |
+|---|---|---|
+| No fresh read-only reviewer can run | Preserve the frozen repair delta; never reuse an earlier reviewer | Report focused review `not run` and do not make the bounded closure claim |
+| Reviewer identity or isolation setting is unavailable | Record the missing field and exclude the round from convergence evidence | Report `unverified`; do not invent metadata |
+| Target or repair diff changes during review | Mark the round invalid before using its output | Freeze a new snapshot and use a new reviewer |
+| Reviewer modifies the target | Stop and identify the exact unauthorized delta | Ask before restoring ambiguous or user-owned changes |
+| Same root cause survives two repairs | Stop changing code | Report the stall, costs, risks, and ask the user |
+| New product, architecture, or accepted-risk decision appears | Stop only dependent repairs | Ask the user; continue only proven-independent groups |
 
 ## 7. Validate and report
 
@@ -110,9 +131,19 @@ The final report must include:
 2. the full decision table from the reference;
 3. files or documents changed and why;
 4. focused repair-review rounds and their declared coverage matrix;
-5. validation by layer;
-6. unreviewed layers and remaining risks or decisions.
+5. the evidence-root path and every valid, invalid, or unverified round;
+6. validation by layer;
+7. unreviewed layers and remaining risks or decisions.
 
 Only say **“0 adopted blockers within the declared repair coverage”** when every supplied root-cause group is resolved and the focused review loop has no remaining adopted blocker. Then state: **“Known findings are closed; ready for full-diff convergence.”**
 
 Enter `$converge-branch-review` only when the user's original request explicitly includes whole-branch convergence. Never invoke it recursively from an internal repair round.
+
+## Anti-pattern blacklist
+
+- Do not implement a comment before verifying its factual premise and current revision.
+- Do not satisfy an absent defect by emitting boilerplate for an exception that never applies.
+- Do not merge findings by similar wording when they require different repairs, or drop duplicate source provenance.
+- Do not call a patch “minimal” while leaving another real caller or isolation case broken.
+- Do not reuse a reviewer, summarize away its raw output, or count an unverifiable round.
+- Do not let green checks from another head, a skipped bot, or a focused repair review stand in for whole-branch convergence.
