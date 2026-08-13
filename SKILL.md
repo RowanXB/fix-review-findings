@@ -32,7 +32,7 @@ Do not claim that this skill has converged the whole branch. Its success boundar
    - for a document, record its path or source and a content hash or immutable revision;
    - for remote review, record the reviewed head or revision when available.
 3. State the authorized write scope: `read-only`, `local edits`, `commit`, `push`, or `remote update`. Never infer permission for the later scopes from permission for an earlier one.
-4. Resolve an `evidenceRoot` outside the target repository. Prefer a user-supplied task-output directory; otherwise use a writable temporary directory and report that it may expire. Never add repair evidence to the target diff.
+4. Resolve an `evidenceRoot` outside the target repository and separately confirm authority to write there. Prefer a user-supplied task-output directory; otherwise use an authorized writable temporary directory and report that it may expire. If none exists, keep the target unchanged, report repair evidence `not run`, and do not make the bounded closure claim.
 5. Capture `evidenceRoot/repair-start.json` with target identity, tracked/staged/unstaged/relevant-untracked state, authority paths and hashes, supplied source identifiers, exclusions, and authorized actions. Later review must compare against this snapshot.
 6. If a finding is unclear, conflicts with an authoritative decision, or requires a new product or architecture choice, stop dependent work and ask the user. Continue only with findings proven independent.
 
@@ -91,10 +91,10 @@ Keep one writer: the root agent owns edits. Any subagent used by this workflow m
 1. Implement one root-cause repair at a time.
 2. Run its narrowest meaningful validation, then inspect affected callers and isolation cases.
 3. Review the complete repair delta from the repair-start snapshot, including new files, rather than only the latest patch.
-4. Freeze `evidenceRoot/round-N/repair.diff` and `snapshot.json`, including the current target identity and deterministic repair-diff hash.
+4. Freeze `evidenceRoot/round-N/repair.diff` and `snapshot.json`, including the target identity, capture command, and SHA-256 of the exact saved diff bytes.
 5. Before spawning, save the exact prompt as `reviewer.prompt.md`. Start a fresh read-only reviewer unused in earlier rounds, with no inherited conversation context. Give it the known finding, intended invariant, repair-start snapshot, frozen repair delta, and relevant callers. It may see the repair goal because this loop verifies a known fix; do not ask it to certify the whole branch.
 6. Save runtime-reported identity, parent, launch time, isolation setting, prompt hash, and snapshot tuple in `reviewer.meta.json`; never invent missing fields. Save the raw response unchanged as `reviewer.output.md` and add its hash and completion state to metadata.
-7. Recompute the target identity and complete repair-diff hash after review. If either changed, mark the round invalid and start a new round; do not use stale output to claim repair closure.
+7. Re-run the capture command and recompute the target identity and diff SHA-256 after review. If either changed, mark the round invalid and start a new round; do not use stale output to claim closure.
 8. Independently verify each new review claim, update `adjudication.json`, and apply only justified minimal fixes.
 9. Repeat with a new snapshot and fresh reviewer after every material change until there are zero adopted blockers within the declared repair coverage, or stop under the blocked conditions below.
 
