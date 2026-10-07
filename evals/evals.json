@@ -36,6 +36,19 @@
         "Produces a complete source-to-root-cause decision table.",
         "States the bounded known-findings completion claim only if all findings are resolved."
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "A previous repair passed its focused tests and was recorded as complete. New review shows that it preserved the reported local behavior but changed a downstream responsibility; the tests substituted the very boundary now at issue. The user authorizes the smallest complete repair, asks why the issue recurred, and rejects new product or architecture scope. Verify the new claim, trace actual consumers and derived contracts, and update the repair and its evidence.",
+      "expected_output": "A bounded repair record that distinguishes origin, full invariant, new responsibilities, real validation boundaries and the disposition of the earlier closure receipt.",
+      "expectations": [
+        "Records evidence-backed origin without blaming review intensity or inventing history.",
+        "Maps actual affected surfaces to changed, checked unchanged, excluded or unverified dispositions.",
+        "Pairs each responsibility added or moved by the patch with a supported counterexample and validation.",
+        "Explicitly withdraws or narrows the unsupported prior closure claim, retains valid historical evidence, and identifies replacement evidence.",
+        "Does not count substituted-boundary tests as proof of that boundary or automatically widen product, trust or architecture scope.",
+        "Separates completion of the authorized repair from optional maintenance and other delivery gates."
+      ]
     }
   ]
 }

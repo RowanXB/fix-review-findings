@@ -1,6 +1,6 @@
 ---
 name: fix-review-findings
-description: Verify, deduplicate, adjudicate, and repair one or more known external review findings for code, implementation plans, or specifications. Use when the user asks to address reviewer, bot, audit, or PR feedback; reconcile multiple review reports; or close a finite set of known findings with the smallest complete fix. Do not use it to discover unknown issues across an entire branch; use converge-branch-review for that.
+description: Use when addressing known reviewer, bot, audit, or PR feedback on code, implementation plans, or specifications; reconciling multiple reports; or revisiting findings after an incomplete repair. For discovery across an entire branch, use converge-branch-review.
 ---
 
 # Fix Review Findings
@@ -77,25 +77,24 @@ Apply the target-specific gates in the reference:
 
 For each `confirmed` finding, choose the narrowest semantic change that closes the root cause across affected consumers. A small patch is incomplete if another real caller still violates the same invariant.
 
-Before editing:
+Before editing, complete the [repair boundary record](references/adjudication-and-coverage.md#repair-boundary-record) for each adopted root cause in `evidenceRoot/coverage.md`. Reuse existing coverage records rather than creating a parallel checklist. Include the complete invariant, evidence-backed origin, actual affected consumers, responsibilities introduced by the proposed patch, counterexamples, and validation boundaries.
 
-1. enumerate directly affected files, callers, tests, schemas, and generated artifacts;
-2. build the shared-helper caller and isolation matrix when a shared helper, transaction boundary, cache, authorization rule, or state transition changes;
-3. identify the narrowest meaningful test for each root cause;
-4. reject speculative abstractions and large refactors whose marginal benefit does not justify cost and regression risk.
+**Completion criterion:** every identified affected surface has a disposition and evidence or an explicit verification gap; every new responsibility has a counterexample check. When a shared or stateful boundary changes, include the reference's caller and isolation matrix. A surface may remain unchanged when inspection proves its contract still holds.
+
+Choose the patch only after this record is coherent. If the fix requires a new product or trust boundary, return to adjudication rather than silently expanding the repair.
 
 Keep one writer: the root agent owns edits. Any subagent used by this workflow must be read-only and must not commit, push, or modify files.
 
 ## 6. Repair and run a focused convergence loop
 
 1. Implement one root-cause repair at a time.
-2. Run its narrowest meaningful validation, then inspect affected callers and isolation cases.
+2. Run its narrowest meaningful validation, then check the complete operation and directly affected consumers against `coverage.md`. Validate both the original failure and the counterexamples introduced by the patch.
 3. Review the complete repair delta from the repair-start snapshot, including new files, rather than only the latest patch.
 4. Freeze `evidenceRoot/round-N/repair.diff` and `snapshot.json`, including the target identity, capture command, and SHA-256 of the exact saved diff bytes.
 5. Before spawning, save the exact prompt as `reviewer.prompt.md`. Start a fresh read-only reviewer unused in earlier rounds, with no inherited conversation context. Give it the known finding, intended invariant, repair-start snapshot, frozen repair delta, and relevant callers. It may see the repair goal because this loop verifies a known fix; do not ask it to certify the whole branch.
 6. Save runtime-reported identity, parent, launch time, isolation setting, prompt hash, and snapshot tuple in `reviewer.meta.json`; never invent missing fields. Save the raw response unchanged as `reviewer.output.md` and add its hash and completion state to metadata.
 7. Re-run the capture command and recompute the target identity and diff SHA-256 after review. If either changed, mark the round invalid and start a new round; do not use stale output to claim closure.
-8. Independently verify each new review claim, update `adjudication.json`, and apply only justified minimal fixes.
+8. Independently verify each new review claim and update `adjudication.json` and `coverage.md`. If it exposes an incomplete earlier repair, identify the missing invariant or responsibility before another patch and explicitly supersede the affected closure claim. Apply only justified minimal fixes.
 9. Repeat with a new snapshot and fresh reviewer after every material change until there are zero adopted blockers within the declared repair coverage, or stop under the blocked conditions below.
 
 **🔴 CHECKPOINT · REPAIR EVIDENCE:** A focused round counts only when its exact prompt, fresh identity, isolation setting, raw output, matching snapshot, and post-review hash are preserved. If any element is missing, record the layer as `unverified`; do not claim focused-review convergence.
@@ -130,7 +129,7 @@ The final report must include:
 1. pinned target identity and authorized write scope;
 2. the full decision table from the reference;
 3. files or documents changed and why;
-4. focused repair-review rounds and their declared coverage matrix;
+4. focused repair-review rounds, their declared coverage matrix, and any superseded closure claims with replacement evidence;
 5. the evidence-root path and every valid, invalid, or unverified round;
 6. validation by layer;
 7. unreviewed layers and remaining risks or decisions.

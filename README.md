@@ -34,7 +34,7 @@ Use [Converge Branch Review](https://github.com/RowanXB/converge-branch-review) 
 2. **Normalize the feedback.** Preserve every source identifier, split compound comments into independently testable claims, and group duplicates by root cause.
 3. **Adjudicate each claim.** Inspect the actual code and authoritative documents before deciding whether the comment should be adopted.
 4. **Apply the right abstraction boundary.** A specification, implementation plan, and code change require different levels of detail.
-5. **Make a minimal complete repair.** Include the callers, tests, schemas, generated artifacts, or isolation cases needed to make the fix whole—without unrelated refactoring.
+5. **Make a minimal complete repair.** Use the [repair boundary record](references/adjudication-and-coverage.md#repair-boundary-record) to trace the full invariant, actual consumers, new responsibilities and counterexamples. When a prior repair was incomplete, supersede its unsupported closure claim without discarding still-valid evidence.
 6. **Run focused repair review.** A fresh read-only reviewer checks the new repair diff. Material fixes create a new snapshot and another round.
 7. **Report bounded evidence.** Local tests, exact-head CI, real PostgreSQL, browser checks, and production-artifact checks are reported separately.
 

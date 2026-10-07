@@ -65,6 +65,27 @@ For every root cause, record:
 
 Prefer the smallest change whose benefit clearly exceeds its expected implementation and regression cost. Evaluate expected value, not rarity alone.
 
+## Repair boundary record
+
+For each adopted root cause, fill these slots before editing and update them with observed results. Keep the record proportional to the actual repair; it bounds the work, not an invitation to audit unrelated code.
+
+| Required slot | Content |
+|---|---|
+| Invariant | The complete observable contract, including behavior the repair must preserve; distinguish the reported symptom from that contract. |
+| Origin | Existing omission, introduced by an earlier repair, changed requirement, or unknown. Cite the relevant revision or decision; an increasing finding count alone proves none of these. |
+| Affected surfaces | Actual producers, callers, consumers and derived artifacts. Record each as change, checked unchanged, outside scope, or unverified, with evidence and reason. |
+| New responsibilities | State, effects, dependencies or resource costs added or moved by the proposed fix; pair each with a legitimate counterexample and its expected behavior. Use “none” only with a reason. |
+| Validation | Original failure, preserved behavior and counterexample checks; name what each check proves, what it substitutes, and what remains untested. |
+| Closure evidence | Current disposition, evidence references and remaining gaps. If an earlier receipt overclaimed closure, identify the exact claim being withdrawn or narrowed and the replacement evidence required. Retain still-valid evidence and the original receipt as history. |
+
+For code repairs, follow the changed contract through the real operation to its next observable use. Inspect actual callers and owners rather than only the named function. Include data writers/readers, enclosing lifecycle, fixtures, and contract artifacts when that path reaches them. Cross-check schema, migrations, generated metadata, workflow contracts and documentation only when the repair changes the contract they describe. Do not infer that every listed category needs editing.
+
+Select counterexamples from supported behavior: a legal state the patch might now reject, an unaffected consumer, an alternate order of operations, or a change in input/data volume. Check whether a local fix moves work into a broader execution scope or changes failure semantics. Derive quantitative limits from the approved contract and actual representation; introducing a new product limit requires a decision.
+
+Test the boundary supporting the claim. A substituted dependency cannot prove that dependency's behavior or cost. Use the real boundary, inspect its implementation with explicitly narrower evidence, or report the gap. Exercise complete operation sequences, including the next operation, rather than only a helper's return value. A test that merely restates the chosen patch is not independent evidence of the invariant.
+
+When findings recur, use the origin and new-responsibility slots to revise the repair model. More tests or more reviewers do not replace a missing boundary. Close the authorized repair when its adopted defects and directly affected contracts are verified; keep optional maintenance, new decisions, full-branch review, CI and activation gates separately identified. Neither repeated advice nor a severity label creates a new gate.
+
 ## Shared-helper and isolation matrix
 
 Create this matrix only when the repair changes a shared helper, stateful boundary, cache, lock, transaction, authorization rule, retry, timeout, or terminal transition. Derive rows from actual callers rather than inventing hypothetical ones.
